@@ -15,7 +15,7 @@ appliesTo: Playlister V1
 - Create a **Google Cloud** project.
 - Enable **YouTube Data API v3**.
 - Configure the **OAuth consent screen** (local/personal use is fine).
-- Create an **OAuth Client ID** suitable for a **loopback redirect**.\n  - We will use a redirect like `http://127.0.0.1:<port>/callback`.
+- Create an **OAuth Client ID** suitable for a **loopback redirect**.\n  - We will use a redirect like `http://127.0.0.1:17600/callback`.
 - Keep the following values ready to paste into **Settings → Credentials**:\n  - **Client ID**\n  - **Client Secret**
 - Ensure the Google account you’ll use has at least one YouTube Music playlist to import.
 

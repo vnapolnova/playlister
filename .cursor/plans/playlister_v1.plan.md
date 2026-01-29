@@ -1,6 +1,6 @@
 ---
 name: Playlister V1
-overview: Build a Windows 10+ Electron desktop app (Electron Forge + Vite + React + TypeScript) that imports two playlists (YouTube Music via official API, Apple Music via Playwright URL import), normalizes and matches tracks, shows A vs B diffs with filters/search/duplicates handling, and exports normalized CSV—read-only in V1 with local DPAPI-encrypted token storage.
+overview: Build a Windows 10+ Electron desktop app (Electron Forge + Vite + React + TypeScript) that imports two playlists (YouTube Music via official API), normalizes and matches tracks, shows A vs B diffs with filters/search/duplicates handling, and exports normalized CSV—read-only in V1 with local DPAPI-encrypted token storage.
 todos: []
 isProject: false
 ---
@@ -9,8 +9,7 @@ isProject: false
 
 - Two-playlist comparison UI (**Left vs Right**) with: OnlyInLeft / OnlyInRight / InBoth filters, search, duplicates collapsed-by-default with expand.
 - Import playlists:
-- **YouTube Music** via **YouTube Data API v3** + system-browser OAuth loopback redirect (`http://127.0.0.1:<port>/callback`).
-- **Apple Music** via **Playwright** (experimental): user pastes playlist URL; try unauthenticated first, else allow automated sign-in and retry; persist Playwright profile locally.
+- **YouTube Music** via **YouTube Data API v3** + system-browser OAuth loopback redirect (`http://127.0.0.1:17600/callback`).
 - Normalize tracks (title/artist/album/duration/provider IDs), match tracks (title+artist primary; album+duration ±5s secondary; use provider IDs when available), per-session manual overrides.
 - Read-only across providers; **no apply changes**.
 - Export **CSV** of normalized results.
@@ -30,8 +29,7 @@ See: `playlister_v1.prerequisites.md`
 
 - **Main process** (Electron):
 - App lifecycle, storage, encryption, provider orchestration.
-- Local loopback server for OAuth callback.
-- Runs Playwright-based Apple import (or spawns a worker) to keep UI responsive.
+- Local loopback server for OAuth callback (bind to **17600**).
 - **Preload**:
 - Minimal IPC surface (`window.api.*`) for renderer to call: connect provider, list playlists, import playlist, compare, export.
 - **Renderer (React)**:
@@ -40,7 +38,7 @@ See: `playlister_v1.prerequisites.md`
 ### Proposed project layout (to create)
 
 - `src/main/`: Electron main code
-- `providers/youtube/*`, `providers/apple/*`
+- `providers/youtube/*`
 - `storage/*` (DPAPI-encrypted file in Electron `userData`)
 - `ipc/*` (typed channels)
 - `src/preload/`: secure bridge
@@ -61,24 +59,11 @@ See: `playlister_v1.prerequisites.md`
 
 - **Auth**:
 - System browser opens Google OAuth URL.
-- Main starts loopback HTTP listener; receives code; exchanges for tokens.
+- Main starts loopback HTTP listener on **17600**; receives code; exchanges for tokens.
 - Store `{ access_token, refresh_token, expiry, scopes }` encrypted via **Windows DPAPI** in a local file under Electron `userData`.
 - **Discovery**: list user playlists, user selects one for Left/Right.
 - **Import**: fetch playlist items; map to normalized tracks using title/artist/album/duration when available.
 - **Caching**: per spec, **no caching**; always re-import on Refresh.
-
-### Apple Music (Playwright URL import)
-
-- **Import entry**: user pastes Apple Music playlist URL.
-- **Technique**:
-- Network-first extraction (intercept XHR/fetch responses where possible).
-- Fallback to DOM scraping if network extraction fails.
-- **Auth**:
-- First try unauthenticated.
-- If blocked, prompt user to run “Sign in” flow in automated Playwright session.
-- Persist Playwright profile locally (within `userData`).
-- **Caching**: cache Apple import results locally; Refresh forces re-import.
-- **Failure policy**: clear, actionable error; no manual-import fallback (per requirements).
 
 ## Matching & comparison logic
 
@@ -115,7 +100,6 @@ See: `playlister_v1.prerequisites.md`
 - **M1: App skeleton**: Forge+Vite+React, navigation, IPC scaffolding, secure preload.
 - **M2: Storage**: DPAPI-encrypted local token store + settings file format.
 - **M3: YouTube**: OAuth loopback + list playlists + import one playlist.
-- **M4: Apple**: Playwright import by URL + persistent profile + caching.
 - **M5: Compare**: normalization + matching + diff views + duplicates UX.
 - **M6: Export**: CSV export + error handling polish.
 
@@ -124,7 +108,6 @@ See: `playlister_v1.prerequisites.md`
 - Unit tests for normalization/matching with small fixtures.
 - Manual smoke test flows:
 - YouTube connect → list → import → compare.
-- Apple URL import unauth → compare; then auth-required playlist flow.
 
 ## Notes / constraints explicitly honored
 
