@@ -21,33 +21,48 @@ const Settings = () => {
     isExpired: false,
   });
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
 
   const loadData = useCallback(async () => {
     try {
+      console.log('[Settings] Loading data...');
+      const apiInstance = api();
+      console.log('[Settings] API instance obtained');
+      
       const [storedSettings, connectionStatus] = await Promise.all([
-        api().getSettings(),
-        api().getYouTubeStatus(),
+        apiInstance.getSettings(),
+        apiInstance.getYouTubeStatus(),
       ]);
+      console.log('[Settings] Data loaded successfully');
       setSettings(storedSettings);
       setStatus(connectionStatus);
     } catch (err) {
+      console.error('[Settings] Error loading data:', err);
       setError((err as Error).message);
     }
   }, []);
 
   useEffect(() => {
+    console.log('[Settings] Component mounted');
     void loadData();
   }, [loadData]);
 
   const onSave = async () => {
     setError(null);
+    setSuccessMessage(null);
     setIsSaving(true);
     try {
+      console.log('[Settings] Saving settings...');
       const saved = await api().saveSettings(settings);
       setSettings(saved);
+      setSuccessMessage('Settings saved successfully!');
+      console.log('[Settings] Settings saved successfully');
+      // Clear success message after 3 seconds
+      setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err) {
+      console.error('[Settings] Error saving settings:', err);
       setError((err as Error).message);
     } finally {
       setIsSaving(false);
@@ -56,11 +71,15 @@ const Settings = () => {
 
   const onConnect = async () => {
     setError(null);
+    setSuccessMessage(null);
     setIsConnecting(true);
     try {
+      console.log('[Settings] Connecting to YouTube...');
       const connectionStatus = await api().connectYouTube(settings);
       setStatus(connectionStatus);
+      console.log('[Settings] YouTube connection successful');
     } catch (err) {
+      console.error('[Settings] Error connecting to YouTube:', err);
       setError((err as Error).message);
     } finally {
       setIsConnecting(false);
@@ -133,6 +152,7 @@ const Settings = () => {
         </div>
       )}
 
+      {successMessage && <div className="success">{successMessage}</div>}
       {error && <div className="error">{error}</div>}
     </section>
   );

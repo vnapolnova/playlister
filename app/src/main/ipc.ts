@@ -138,11 +138,19 @@ const getOAuthClient = async (
 export const registerIpcHandlers = (storePath: string) => {
   const secureStore = createSecureStore(storePath);
 
-  ipcMain.handle(IPC_CHANNELS.settings.get, async () => getSettings(secureStore));
+  ipcMain.handle(IPC_CHANNELS.settings.get, async () => {
+    console.log('[IPC] Getting settings');
+    const settings = await getSettings(secureStore);
+    console.log('[IPC] Settings retrieved');
+    return settings;
+  });
 
-  ipcMain.handle(IPC_CHANNELS.settings.save, async (_event, update: SettingsUpdate) =>
-    saveSettings(secureStore, update),
-  );
+  ipcMain.handle(IPC_CHANNELS.settings.save, async (_event, update: SettingsUpdate) => {
+    console.log('[IPC] Saving settings:', { hasClientId: !!update.youtubeClientId, hasClientSecret: !!update.youtubeClientSecret });
+    const saved = await saveSettings(secureStore, update);
+    console.log('[IPC] Settings saved successfully');
+    return saved;
+  });
 
   ipcMain.handle(IPC_CHANNELS.youtube.status, async () => {
     const tokens = await getYouTubeTokens(secureStore);
