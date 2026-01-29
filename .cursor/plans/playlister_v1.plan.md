@@ -1,6 +1,6 @@
 ---
 name: Playlister V1
-overview: Build a Windows 10+ Electron desktop app (Electron Forge + Vite + React + TypeScript) that imports two playlists (YouTube Music via official API), normalizes and matches tracks, shows A vs B diffs with filters/search/duplicates handling, and exports normalized CSV—read-only in V1 with local DPAPI-encrypted token storage.
+overview: Build a Windows 10+ local web app (Node.js/Express backend + Vite/React/TypeScript frontend) that imports two playlists (YouTube Music via official API), normalizes and matches tracks, shows A vs B diffs with filters/search/duplicates handling, and exports normalized CSV—read-only in V1 with simple local file storage.
 todos: []
 isProject: false
 ---
@@ -16,10 +16,10 @@ isProject: false
 
 ## Recommended stack
 
-- **Electron Forge** (packaging + dev workflow)
-- **Vite** for renderer bundling
-- **React + TypeScript** for UI
-- Electron security model: renderer has no Node; use `preload` + IPC.
+- **Backend**: Node.js + Express + TypeScript
+- **Frontend**: Vite + React + TypeScript
+- **Dev workflow**: Run both with `npm run dev`, opens browser to `localhost:3000`
+- **API communication**: Frontend calls Express REST APIs
 
 ## Human prerequisites (tracked separately)
 
@@ -27,25 +27,31 @@ See: `playlister_v1.prerequisites.md`
 
 ## Architecture (modules)
 
-- **Main process** (Electron):
-- App lifecycle, storage, encryption, provider orchestration.
-- Local loopback server for OAuth callback (bind to **17600**).
-- **Preload**:
-- Minimal IPC surface (`window.api.*`) for renderer to call: connect provider, list playlists, import playlist, compare, export.
-- **Renderer (React)**:
-- Screens + state, tables/filters/search, manual match overrides, export UI.
+- **Backend (Express server on port 17600)**:
+- Provider orchestration (YouTube API, Apple Music Playwright)
+- OAuth callback handler (`/auth/youtube/callback`)
+- Storage (local JSON files in user data directory)
+- REST APIs: `/api/playlists`, `/api/compare`, `/api/export`
+- **Frontend (Vite dev server on port 3000, production served by Express)**:
+- React screens + state
+- Tables/filters/search UI
+- Manual match overrides
+- Export UI
 
 ### Proposed project layout (to create)
 
-- `src/main/`: Electron main code
-- `providers/youtube/*`
-- `storage/*` (DPAPI-encrypted file in Electron `userData`)
-- `ipc/*` (typed channels)
-- `src/preload/`: secure bridge
-- `src/renderer/`: React app
+- `server/`: Express backend (TypeScript)
+- `providers/youtube/*` (YouTube API integration)
+- `providers/apple/*` (Apple Music Playwright)
+- `storage/*` (local JSON file storage in user data directory)
+- `routes/*` (Express API routes)
+- `index.ts` (Express server + OAuth callback handler)
+- `src/`: React frontend (TypeScript)
 - `routes/*` (Comparison, Import, Settings)
 - `components/*` (tables, filters, diff badges)
-- `domain/*` (normalized types + matching)
+- `api/*` (frontend API client)
+- `shared/`: Shared types
+- `domain/*` (normalized types + matching logic)
 
 ## Key data models (domain)
 
@@ -59,8 +65,8 @@ See: `playlister_v1.prerequisites.md`
 
 - **Auth**:
 - System browser opens Google OAuth URL.
-- Main starts loopback HTTP listener on **17600**; receives code; exchanges for tokens.
-- Store `{ access_token, refresh_token, expiry, scopes }` encrypted via **Windows DPAPI** in a local file under Electron `userData`.
+- Express server listens on **17600**; receives code at `/auth/youtube/callback`; exchanges for tokens.
+- Store `{ access_token, refresh_token, expiry, scopes }` in a local JSON file in user data directory (`%APPDATA%/Playlister/tokens.json`), protected by Windows file system permissions.
 - **Discovery**: list user playlists, user selects one for Left/Right.
 - **Import**: fetch playlist items; map to normalized tracks using title/artist/album/duration when available.
 - **Caching**: per spec, **no caching**; always re-import on Refresh.
@@ -89,19 +95,19 @@ See: `playlister_v1.prerequisites.md`
 - Search box.
 - Duplicates toggle: collapsed/expanded.
 - Manual override UI for ambiguous matches (session-only).
-- **Settings → Credentials**:
-- Enter Google OAuth client ID/secret.
-- Connect/disconnect status.
+- **Settings** (optional/minimal):
+- Connection status display only (connected/disconnected).
+- No credential entry UI (credentials read from config file).
 - **Export**:
 - Save CSV of normalized results (and optionally current filter view).
 
 ## Milestones
 
-- **M1: App skeleton**: Forge+Vite+React, navigation, IPC scaffolding, secure preload.
-- **M2: Storage**: DPAPI-encrypted local token store + settings file format.
-- **M3: YouTube**: OAuth loopback + list playlists + import one playlist.
-- **M5: Compare**: normalization + matching + diff views + duplicates UX.
-- **M6: Export**: CSV export + error handling polish.
+- **M1: App skeleton**: Express server + Vite/React frontend, navigation, API scaffolding, dev workflow.
+- **M2: Storage**: Local JSON file storage for tokens + settings in user data directory.
+- **M3: YouTube**: OAuth loopback callback + list playlists + import one playlist.
+- **M4: Compare**: normalization + matching + diff views + duplicates UX.
+- **M5: Export**: CSV export + error handling polish.
 
 ## Testing strategy (lightweight, V1)
 
@@ -112,9 +118,10 @@ See: `playlister_v1.prerequisites.md`
 ## Notes / constraints explicitly honored
 
 - Windows 10+ desktop only (v1).
-- Local-only storage; no backend.
+- Local-only storage; Express backend runs locally (not deployed).
 - System-browser OAuth; no embedded webviews.
 - Read-only; explicit consent for any future writes (deferred).
+- Simple file storage with OS-level permissions (no encryption in v1).
 
 ## Source requirements referenced
 

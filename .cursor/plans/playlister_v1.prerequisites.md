@@ -15,8 +15,10 @@ appliesTo: Playlister V1
 - Create a **Google Cloud** project.
 - Enable **YouTube Data API v3**.
 - Configure the **OAuth consent screen** (local/personal use is fine).
-- Create an **OAuth Client ID** suitable for a **loopback redirect**.\n  - We will use a redirect like `http://127.0.0.1:17600/callback`.
-- Keep the following values ready to paste into **Settings → Credentials**:\n  - **Client ID**\n  - **Client Secret**
+- Create an **OAuth Client ID** suitable for a **loopback redirect**.
+  - We will use a redirect like `http://127.0.0.1:17600/callback`.
+- Download the credentials JSON file (or note the Client ID and Client Secret).
+- Place the credentials file in the project directory (the app will read it on startup).
 - Ensure the Google account you’ll use has at least one YouTube Music playlist to import.
 
 ### Apple Music (for Apple import via URL + Playwright)
