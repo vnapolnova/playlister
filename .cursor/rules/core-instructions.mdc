@@ -1,0 +1,10 @@
+---
+description: Core agent instructions for Playlister
+alwaysApply: true
+---
+
+# Core Instructions
+
+- Prefer the simplest viable solution first.
+- When command execution fails, fix the environment instead of using workarounds.
+- Use PowerShell commands that are compatible with Windows 11.
